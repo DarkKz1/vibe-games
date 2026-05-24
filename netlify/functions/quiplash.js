@@ -105,7 +105,7 @@ export default async (req) => {
         .join('\n');
       const msg = await client.messages.create({
         model: 'claude-sonnet-4-6',
-        max_tokens: 250,
+        max_tokens: 400,
         system: JUDGE_SYSTEM,
         messages: [{
           role: 'user',
