@@ -107,6 +107,7 @@ export const useGame = create<Store>((set, get) => ({
     return { rounds: r };
   }),
   vote: (answerId) => set((s) => {
+    if (s.currentVoterIdx >= s.players.length) return s;
     const r = [...s.rounds];
     const round = { ...r[s.roundIdx] };
     const voterId = s.players[s.currentVoterIdx].id;
@@ -122,6 +123,7 @@ export const useGame = create<Store>((set, get) => ({
     };
   }),
   submitAttribution: (mapping) => set((s) => {
+    if (s.currentAttribIdx >= s.players.length) return s;
     const r = [...s.rounds];
     const round = { ...r[s.roundIdx] };
     const voterId = s.players[s.currentAttribIdx].id;
