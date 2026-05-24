@@ -67,23 +67,28 @@ export function VoteScreen() {
 
       <div className="flex-1 overflow-auto -mx-1 px-1">
         <div className="flex flex-col gap-3 pb-3">
-          {round.answers.map((a, i) => (
-            <button
-              key={a.id}
-              onClick={() => handlePick(a.id)}
-              className="text-left bg-smoke active:bg-[#22232a] active:scale-[0.99] transition-all rounded-2xl px-5 py-4"
-              style={{
-                animation: `slideUp 280ms cubic-bezier(.2,.8,.2,1) both ${i * 60}ms`,
-              }}
-            >
-              <div className="font-mono text-[9px] tracking-[0.3em] text-muted mb-1">
-                ВАРИАНТ {String.fromCharCode(65 + i)}
-              </div>
-              <div className="font-display font-semibold text-paper text-[17px] leading-snug">
-                {a.text}
-              </div>
-            </button>
-          ))}
+          {round.answers.map((a, i) => {
+            const isOwn = a.authorId === player.id;
+            return (
+              <button
+                key={a.id}
+                onClick={() => !isOwn && handlePick(a.id)}
+                disabled={isOwn}
+                className="text-left bg-smoke active:bg-[#22232a] active:scale-[0.99] transition-all rounded-2xl px-5 py-4 disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{
+                  animation: `slideUp 280ms cubic-bezier(.2,.8,.2,1) both ${i * 60}ms`,
+                  ...(isOwn ? { border: '1px dashed rgba(255,255,255,0.18)', background: 'transparent' } : {}),
+                }}
+              >
+                <div className="font-mono text-[9px] tracking-[0.3em] text-muted mb-1">
+                  ВАРИАНТ {String.fromCharCode(65 + i)}{isOwn && ' · ТВОЙ'}
+                </div>
+                <div className="font-display font-semibold text-paper text-[17px] leading-snug">
+                  {a.text}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
