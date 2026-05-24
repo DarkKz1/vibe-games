@@ -71,7 +71,7 @@ export function VoteScreen() {
             <button
               key={a.id}
               onClick={() => handlePick(a.id)}
-              className="text-left bg-smoke hover:bg-[#22232a] active:scale-[0.99] transition-all rounded-2xl px-5 py-4 chip-shadow"
+              className="text-left bg-smoke active:bg-[#22232a] active:scale-[0.99] transition-all rounded-2xl px-5 py-4"
               style={{
                 animation: `slideUp 280ms cubic-bezier(.2,.8,.2,1) both ${i * 60}ms`,
               }}
