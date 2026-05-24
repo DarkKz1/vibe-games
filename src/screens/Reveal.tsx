@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useGame } from '../store';
 
 export function Reveal() {
@@ -6,8 +7,34 @@ export function Reveal() {
   const totalRounds = useGame((s) => s.totalRounds);
   const rounds = useGame((s) => s.rounds);
   const nextRound = useGame((s) => s.nextRound);
+  const [verdict, setVerdict] = useState<string | null>(null);
 
   const round = rounds[roundIdx];
+
+  useEffect(() => {
+    let cancel = false;
+    setVerdict(null);
+    const items = round.answers.map((a) => {
+      const author = a.authorId === 'ai'
+        ? { name: 'AI', isAi: true }
+        : { name: players.find((p) => p.id === a.authorId)?.name || '?', isAi: false };
+      return { text: a.text, author: author.name, isAi: author.isAi, votes: a.votes.length };
+    });
+    fetch('/api/quiplash', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind: 'judge', prompt: round.prompt, items }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancel) return;
+        const v = (d?.verdict || '').toString().trim();
+        if (v) setVerdict(v);
+        else setVerdict('кто-то здесь врёт. но не я.');
+      })
+      .catch(() => { if (!cancel) setVerdict('кто-то здесь врёт. но не я.'); });
+    return () => { cancel = true; };
+  }, [round, players]);
   const sortedAnswers = [...round.answers].sort((a, b) => b.votes.length - a.votes.length);
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
 
@@ -35,9 +62,32 @@ export function Reveal() {
         <div className="font-mono text-[10px] tracking-[0.3em] text-muted">
           РАУНД {roundIdx + 1} · РАЗОБЛАЧЕНИЕ
         </div>
-        <h2 className="font-display font-extrabold text-[26px] mt-1 text-paper" style={{ letterSpacing: '-0.02em' }}>
+        <h2 className="font-display font-extrabold text-[22px] mt-1 text-paper" style={{ letterSpacing: '-0.02em' }}>
           {round.prompt}
         </h2>
+      </div>
+
+      {/* AI Judge verdict card */}
+      <div
+        className="rounded-2xl px-4 py-3 mb-3 animate-slide-up"
+        style={{
+          background: 'rgba(255, 210, 63, 0.08)',
+          border: '1px solid rgba(255, 210, 63, 0.35)',
+        }}
+      >
+        <div className="flex items-baseline gap-2 mb-1">
+          <span className="text-base">🤖</span>
+          <span className="font-mono text-[9px] tracking-[0.3em] text-muted">AI · СУДЬЯ</span>
+        </div>
+        {verdict === null ? (
+          <div className="font-mono text-[11px] tracking-[0.2em] text-muted animate-pulse">
+            судья думает…
+          </div>
+        ) : (
+          <div className="font-display text-[14px] leading-snug text-paper italic">
+            «{verdict}»
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-auto -mx-1 px-1">

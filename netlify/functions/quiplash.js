@@ -44,6 +44,28 @@ const FAKE_SYSTEM = `Ты пишешь ответ в пасс-фон игре п
 
 Верни ТОЛЬКО JSON: {"fake": "<твой ответ>"}`;
 
+const JUDGE_SYSTEM = `Ты — ведущий-судья пасс-фон вечеринки. Стиль: Jackbox/Дудь-микс,
+slighty саркастичный, наблюдательный, иногда жалит, но добро.
+
+Тебе дают вопрос раунда и результаты голосования (с авторами и кол-вом голосов).
+Твоя задача — короткий комментарий 2-3 предложения, на русском, lowercase ок.
+
+Что можно:
+- Подколоть победителя в этом раунде
+- Заметить кто никого не убедил
+- Назвать кто угадал AI-фальшивку (если есть данные)
+- Подшутить над абсурдностью ответов
+- Дать "приз вечера" одному из ответов
+- Любая theatre — пусть звучит как живой ведущий, не пресс-релиз
+
+Что НЕЛЬЗЯ:
+- Эмодзи
+- "В этом раунде…" — скучно, придумай заход
+- Никакого markdown
+- Не цитируй ответы дословно, упоминай их по сути
+
+Верни ТОЛЬКО JSON: {"verdict": "<твой комментарий>"}`;
+
 export default async (req) => {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'method' }), { status: 405 });
@@ -70,6 +92,31 @@ export default async (req) => {
       const prompt = (parsed?.prompt || '').toString().slice(0, 180);
       if (!prompt) throw new Error('empty_prompt');
       return json({ prompt });
+    }
+
+    if (body.kind === 'judge') {
+      const prompt = String(body.prompt || '').slice(0, 240);
+      const items = Array.isArray(body.items) ? body.items.slice(0, 10) : [];
+      // items: [{ text, author, votes, isAi }]
+      const lines = items
+        .map((it, i) =>
+          `${i + 1}. "${String(it.text).slice(0, 120)}" — ${it.isAi ? 'AI' : String(it.author).slice(0, 24)} (голосов: ${Number(it.votes) || 0})`
+        )
+        .join('\n');
+      const msg = await client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 250,
+        system: JUDGE_SYSTEM,
+        messages: [{
+          role: 'user',
+          content: `ВОПРОС: ${prompt}\n\nРЕЗУЛЬТАТЫ:\n${lines}\n\nТвой комментарий:`,
+        }],
+      });
+      const text = (msg.content || []).map((b) => b.type === 'text' ? b.text : '').join('').trim();
+      const parsed = parseJson(text);
+      const verdict = (parsed?.verdict || '').toString().slice(0, 280);
+      if (!verdict) throw new Error('empty_verdict');
+      return json({ verdict });
     }
 
     if (body.kind === 'fake') {
