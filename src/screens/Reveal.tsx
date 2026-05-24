@@ -11,6 +11,18 @@ export function Reveal() {
   const sortedAnswers = [...round.answers].sort((a, b) => b.votes.length - a.votes.length);
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
 
+  // attribution accuracy per voter
+  const accuracyByVoter: Record<string, { correct: number; total: number }> = {};
+  for (const p of players) accuracyByVoter[p.id] = { correct: 0, total: 0 };
+  for (const [voterId, mapping] of Object.entries(round.attributions)) {
+    for (const [answerId, predicted] of Object.entries(mapping)) {
+      const ans = round.answers.find((a) => a.id === answerId);
+      if (!ans || ans.authorId === voterId) continue;
+      accuracyByVoter[voterId].total += 1;
+      if (predicted === ans.authorId) accuracyByVoter[voterId].correct += 1;
+    }
+  }
+
   const authorLabel = (authorId: string | 'ai') => {
     if (authorId === 'ai') return { name: 'AI', emoji: '🤖', isAi: true };
     const p = players.find((pp) => pp.id === authorId);
@@ -74,24 +86,32 @@ export function Reveal() {
             СЧЁТ
           </div>
           <div className="flex flex-col gap-1.5">
-            {sortedPlayers.map((p, i) => (
-              <div
-                key={p.id}
-                className="flex items-center gap-3 px-3 py-2 rounded-xl"
-                style={{
-                  background: i === 0 ? 'rgba(255, 210, 63, 0.10)' : '#1A1A1D',
-                }}
-              >
-                <span className="text-xl">{p.emoji}</span>
-                <span className="flex-1 font-display font-bold text-paper text-[15px]">{p.name}</span>
-                <span
-                  className="font-mono font-bold text-[15px]"
-                  style={{ color: i === 0 ? 'var(--round)' : 'var(--paper)' }}
+            {sortedPlayers.map((p, i) => {
+              const acc = accuracyByVoter[p.id];
+              return (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-3 px-3 py-2 rounded-xl"
+                  style={{
+                    background: i === 0 ? 'rgba(255, 210, 63, 0.10)' : '#1A1A1D',
+                  }}
                 >
-                  {p.score}
-                </span>
-              </div>
-            ))}
+                  <span className="text-xl">{p.emoji}</span>
+                  <span className="flex-1 font-display font-bold text-paper text-[15px]">{p.name}</span>
+                  {acc && acc.total > 0 && (
+                    <span className="font-mono text-[10px] tracking-[0.14em] text-muted mr-2">
+                      {acc.correct}/{acc.total}
+                    </span>
+                  )}
+                  <span
+                    className="font-mono font-bold text-[15px]"
+                    style={{ color: i === 0 ? 'var(--round)' : 'var(--paper)' }}
+                  >
+                    {p.score}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

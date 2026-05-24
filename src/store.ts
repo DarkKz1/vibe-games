@@ -18,6 +18,7 @@ interface Store extends QuiplashState {
   addAiFake: (text: string) => void;
   shuffleAnswers: () => void;
   vote: (answerId: string) => void;
+  submitAttribution: (mapping: Record<string, string>) => void;
   scoreRound: () => void;
   nextRound: () => void;
   reset: () => void;
@@ -31,6 +32,7 @@ const initial = (): QuiplashState => ({
   rounds: [],
   currentAuthorIdx: 0,
   currentVoterIdx: 0,
+  currentAttribIdx: 0,
 });
 
 export const useGame = create<Store>((set, get) => ({
@@ -52,10 +54,13 @@ export const useGame = create<Store>((set, get) => ({
         prompt: '',
         answers: [],
         voted: [],
+        attributions: {},
+        attributed: [],
         scoredOut: false,
       } as Round)),
       currentAuthorIdx: 0,
       currentVoterIdx: 0,
+      currentAttribIdx: 0,
     });
   },
   nextPhase: (p) => set({ phase: p }),
@@ -116,6 +121,19 @@ export const useGame = create<Store>((set, get) => ({
       currentVoterIdx: s.currentVoterIdx + 1,
     };
   }),
+  submitAttribution: (mapping) => set((s) => {
+    const r = [...s.rounds];
+    const round = { ...r[s.roundIdx] };
+    const voterId = s.players[s.currentAttribIdx].id;
+    if (round.attributed.includes(voterId)) return s;
+    round.attributions = { ...round.attributions, [voterId]: mapping };
+    round.attributed = [...round.attributed, voterId];
+    r[s.roundIdx] = round;
+    return {
+      rounds: r,
+      currentAttribIdx: s.currentAttribIdx + 1,
+    };
+  }),
   scoreRound: () => set((s) => {
     const r = [...s.rounds];
     const round = { ...r[s.roundIdx] };
@@ -138,6 +156,19 @@ export const useGame = create<Store>((set, get) => ({
       }
     }
 
+    // attribution bonus: +25 per correct authorship guess (excluding self)
+    for (const [voterId, mapping] of Object.entries(round.attributions)) {
+      const voter = players.find((p) => p.id === voterId);
+      if (!voter) continue;
+      for (const [answerId, predicted] of Object.entries(mapping)) {
+        const ans = round.answers.find((a) => a.id === answerId);
+        if (!ans) continue;
+        // can't earn by guessing your own answer
+        if (ans.authorId === voterId) continue;
+        if (predicted === ans.authorId) voter.score += 25;
+      }
+    }
+
     round.scoredOut = true;
     r[s.roundIdx] = round;
     return { rounds: r, players };
@@ -152,6 +183,7 @@ export const useGame = create<Store>((set, get) => ({
       phase: 'intro',
       currentAuthorIdx: 0,
       currentVoterIdx: 0,
+      currentAttribIdx: 0,
     };
   }),
   reset: () => set(initial()),

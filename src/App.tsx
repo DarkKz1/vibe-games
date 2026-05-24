@@ -4,6 +4,7 @@ import { Intro } from './screens/Intro';
 import { AnswerScreen } from './screens/AnswerScreen';
 import { WaitAI } from './screens/WaitAI';
 import { VoteScreen } from './screens/VoteScreen';
+import { AttributeScreen } from './screens/AttributeScreen';
 import { Reveal } from './screens/Reveal';
 import { Final } from './screens/Final';
 
@@ -21,8 +22,9 @@ export default function App() {
         {phase === 'intro'   && <Intro />}
         {phase === 'answer'  && <AnswerScreen />}
         {phase === 'wait_ai' && <WaitAI />}
-        {phase === 'vote'    && <VoteScreen />}
-        {phase === 'reveal'  && <Reveal />}
+        {phase === 'vote'      && <VoteScreen />}
+        {phase === 'attribute' && <AttributeScreen />}
+        {phase === 'reveal'    && <Reveal />}
         {phase === 'final'   && <Final />}
       </div>
     </div>

@@ -8,16 +8,13 @@ export function VoteScreen() {
   const rounds = useGame((s) => s.rounds);
   const vote = useGame((s) => s.vote);
   const nextPhase = useGame((s) => s.nextPhase);
-  const scoreRound = useGame((s) => s.scoreRound);
-
   const [handed, setHanded] = useState(false);
 
   const player = players[idx];
   const round = rounds[roundIdx];
 
   if (idx >= players.length) {
-    scoreRound();
-    nextPhase('reveal');
+    nextPhase('attribute');
     return null;
   }
 

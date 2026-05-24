@@ -16,6 +16,10 @@ export interface Round {
   prompt: string;
   answers: AnswerEntry[]; // includes ai fake
   voted: string[];        // ids of players who already voted
+  // attributions: { voterId: { answerId: predictedAuthorId } }
+  // predictedAuthorId is either a player id or 'ai'
+  attributions: Record<string, Record<string, string>>;
+  attributed: string[];   // voters who finished attribution
   scoredOut: boolean;
 }
 
@@ -24,7 +28,8 @@ export type Phase =
   | 'intro'        // round intro splash
   | 'answer'       // pass-phone, each player writes answer
   | 'wait_ai'      // calling /api/quiplash to add fake + prepare vote
-  | 'vote'         // pass-phone, each player votes
+  | 'vote'         // pass-phone, each player votes for favorite
+  | 'attribute'    // pass-phone, each player guesses who wrote what
   | 'reveal'       // who said what + AI reveal + scores
   | 'final';       // overall leaderboard
 
@@ -36,4 +41,5 @@ export interface QuiplashState {
   rounds: Round[];
   currentAuthorIdx: number; // index for pass-phone answer
   currentVoterIdx: number;  // index for pass-phone vote
+  currentAttribIdx: number; // index for pass-phone attribute
 }
